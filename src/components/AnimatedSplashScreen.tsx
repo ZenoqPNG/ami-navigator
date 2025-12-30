@@ -1,71 +1,99 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import * as SplashScreen from 'expo-splash-screen';
-import { MotiText, MotiView } from 'moti';
+import { MotiView, useAnimationState } from 'moti';
 import React, { useEffect, useState } from 'react';
 import { Dimensions, Image, StyleSheet, Text, View } from 'react-native';
 
 const { width } = Dimensions.get('window');
 
-// On empêche le splash natif de partir trop vite
-SplashScreen.preventAutoHideAsync().catch(() => {});
+SplashScreen.preventAutoHideAsync();
 
-export default function AnimatedSplashScreen({ children }: { children: React.ReactNode }) {
-  const [isReady, setIsReady] = useState(false);
-  const [animationFinished, setAnimationFinished] = useState(false);
+interface AnimatedSplashScreenProps {
+  children?: React.ReactNode;
+}
+
+export default function AnimatedSplashScreen({ children }: AnimatedSplashScreenProps) {
+  const [isSplashAnimationFinished, setIsSplashAnimationFinished] = useState(false);
+
+  // 1. Animation du Logo (Effet Rebond Spring)
+  const logoAnimation = useAnimationState({
+    from: { opacity: 0, scale: 0.5, translateY: 20 },
+    to: { opacity: 1, scale: 1, translateY: 0 },
+    exit: { opacity: 0, scale: 1.5 },
+  });
+
+  // 2. Animation de la barre de chargement
+  const loadingBarAnimation = useAnimationState({
+    from: { width: 0 },
+    to: { width: width * 0.6 }, // 60% de la largeur de l'écran
+  });
 
   useEffect(() => {
-    // On simule le chargement des ressources (API, Storage, etc.)
-    setTimeout(async () => {
-      setIsReady(true);
-      await SplashScreen.hideAsync();
-      
-      // On laisse l'animation se finir avant d'afficher l'app
-      setTimeout(() => setAnimationFinished(true), 2500);
-    }, 500);
+    async function prepare() {
+      try {
+        // Temps d'attente pour laisser l'animation se jouer (3 secondes)
+        // C'est ici que tu peux ajuster la durée totale
+        await new Promise(resolve => setTimeout(resolve, 3000)); 
+      } catch (e) {
+        console.warn(e);
+      } finally {
+        // Une fois le temps écoulé, on cache le splash natif et on switch
+        await SplashScreen.hideAsync();
+        setIsSplashAnimationFinished(true);
+      }
+    }
+
+    prepare();
+    
+    // On lance les animations d'entrée immédiatement
+    logoAnimation.transitionTo('to');
+    loadingBarAnimation.transitionTo('to');
   }, []);
 
-  if (!animationFinished) {
+  if (!isSplashAnimationFinished) {
     return (
-      <View style={styles.container}>
-        <LinearGradient
-          colors={['#007AFF', '#0055BB']}
-          style={StyleSheet.absoluteFill}
-        />
-        
-        {/* LOGO ANIMÉ */}
+      <LinearGradient
+        colors={['#007AFF', '#0047AB']} 
+        style={styles.container}
+      >
         <MotiView
-          from={{ opacity: 0, scale: 0.5, translateY: 20 }}
-          animate={{ opacity: 1, scale: 1, translateY: 0 }}
-          transition={{ type: 'spring', damping: 12, stiffness: 100 }}
-          style={styles.content}
+          state={logoAnimation}
+          transition={{ 
+            type: 'spring', 
+            damping: 7,      // Plus bas = plus de rebond
+            stiffness: 120,  // Plus haut = plus rapide
+            mass: 0.8 
+          }}
+          style={styles.logoContainer}
         >
           <Image 
-            source={require('../../assets/images/splash.png')} // On change ami_logo.png par splash.png
+            source={require('../../assets/images/splash.png')} 
             style={styles.logo} 
             resizeMode="contain" 
-        />
-          <MotiText 
-            from={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 500 }}
-            style={styles.title}
-          >
-            MINIWAY
-          </MotiText>
-        </MotiView>
-
-        {/* BARRE DE CHARGEMENT "TECH" */}
-        <View style={styles.loaderBg}>
-          <MotiView
-            from={{ width: 0 }}
-            animate={{ width: 180 }}
-            transition={{ type: 'timing', duration: 2000 }}
-            style={styles.loaderFill}
           />
+          <Text style={styles.appName}>MiniWay</Text>
+        </MotiView>
+        
+        <View style={styles.loaderWrapper}>
+            <MotiView
+              state={loadingBarAnimation}
+              transition={{ 
+                type: 'timing', 
+                duration: 2500, // La barre met 2.5s à se remplir
+                delay: 200 
+              }}
+              style={styles.loadingBarBackground}
+            >
+              <LinearGradient
+                colors={['#FFFFFF', '#E0E0E0']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.loadingBarFill}
+              />
+            </MotiView>
+            <Text style={styles.loadingText}>Chargement des systèmes...</Text>
         </View>
-
-        <Text style={styles.footerText}>Initialisation des systèmes...</Text>
-      </View>
+      </LinearGradient>
     );
   }
 
@@ -73,31 +101,50 @@ export default function AnimatedSplashScreen({ children }: { children: React.Rea
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  content: { alignItems: 'center' },
-  logo: { width: 180, height: 180 },
-  title: { 
-    color: 'white', 
-    fontSize: 22, 
-    fontWeight: '900', 
-    marginTop: 20, 
-    letterSpacing: 4 
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  loaderBg: { 
-    width: 180, 
-    height: 4, 
-    backgroundColor: 'rgba(255,255,255,0.2)', 
-    borderRadius: 2, 
-    marginTop: 40,
-    overflow: 'hidden'
+  logoContainer: {
+    alignItems: 'center',
+    marginBottom: 50,
   },
-  loaderFill: { height: '100%', backgroundColor: 'white' },
-  footerText: { 
-    position: 'absolute', 
-    bottom: 50, 
-    color: 'rgba(255,255,255,0.6)', 
-    fontSize: 10, 
-    fontWeight: '700', 
-    textTransform: 'uppercase' 
+  logo: {
+    width: 180,
+    height: 180,
+  },
+  appName: {
+    fontSize: 32,
+    fontWeight: '900',
+    color: 'white',
+    marginTop: 10,
+    letterSpacing: 2,
+    textShadowColor: 'rgba(0,0,0,0.2)',
+    textShadowOffset: { width: 0, height: 3 },
+    textShadowRadius: 5
+  },
+  loaderWrapper: {
+    position: 'absolute',
+    bottom: 80,
+    alignItems: 'center',
+  },
+  loadingBarBackground: {
+    height: 6,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  loadingBarFill: {
+    height: '100%',
+    width: '100%',
+  },
+  loadingText: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 10,
+    fontWeight: '700',
+    marginTop: 10,
+    letterSpacing: 1,
+    textTransform: 'uppercase'
   }
 });
