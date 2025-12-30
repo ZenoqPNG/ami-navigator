@@ -1,0 +1,33 @@
+{
+  "expo": {
+    "name": "MiniWay",
+    "slug": "miniway",
+    "version": "1.0.9",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "miniway",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/images/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#007AFF"
+    },
+    "android": {
+      "package": "com.recytech.miniway",
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "FOREGROUND_SERVICE"
+      ],
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icon.png",
+        "backgroundColor": "#007AFF"
+      }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "9a1f5c6d-8961-4870-91b3-ee681e079975"
+      }
+    }
+  }
+}
